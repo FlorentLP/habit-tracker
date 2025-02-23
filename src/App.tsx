@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
-
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
+import { db } from './config/firebase';
 // Définition du type Habit
 interface Habit {
     id: string;
@@ -17,17 +17,18 @@ function App() {
     useEffect(() => {
         try {
             const unsubscribe = onSnapshot(collection(db, "habits"), (snapshot) => {
-                const newHabits: Habit[] = snapshot.docs.map((doc) => ({
-                    ...(doc.data() as Habit),
-                }));
+                const newHabits: Habit[] = snapshot.docs.map((doc) => {
+                    const data = doc.data() as Omit<Habit, "id">; // Ensure Firestore doesn't store `id`
+                    return { id: doc.id, ...data }; // Explicitly set `id` from Firestore metadata
+                });
                 setHabits(newHabits);
             });
             return () => unsubscribe();
-        }
-        catch (error) {
+        } catch (error) {
             console.error("Firestore error:", error);
         }
     }, []);
+
 
     const addHabit = async () => {
         if (habit.trim() === "") return;
